@@ -14,9 +14,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Terminal
-import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -61,7 +62,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun SerminalApp() {
-    var blur by remember { mutableFloatStateOf(16f) }
+    var blur by remember { mutableFloatStateOf(30f) }
     var shade by remember { mutableFloatStateOf(0.48f) }
     Box(Modifier.fillMaxSize().background(Night)) {
         JellyfishBackdrop(blur)
@@ -73,9 +74,8 @@ private fun SerminalApp() {
             Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 28.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Header()
+            Header(blur, { blur = it }, shade, { shade = it })
             TerminalPanel(Modifier.weight(1f))
-            AmbienceControls(blur, { blur = it }, shade, { shade = it })
         }
     }
 }
@@ -89,36 +89,55 @@ private fun JellyfishBackdrop(blur: Float) {
         factory = { ctx ->
             PlayerView(ctx).apply {
                 this.player = player
+                // TextureView is required because SurfaceView bypasses Compose graphics effects.
+                setSurfaceType(PlayerView.SURFACE_TYPE_TEXTURE_VIEW)
                 useController = false
                 resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                 setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
             }
         },
-        modifier = Modifier.fillMaxSize().blur(blur.dp)
+        modifier = Modifier.fillMaxSize().blur(blur.dp).background(Night)
     )
 }
 
 @Composable
-private fun Header() {
+private fun Header(
+    blur: Float,
+    onBlur: (Float) -> Unit,
+    shade: Float,
+    onShade: (Float) -> Unit
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            Modifier.size(42.dp).clip(RoundedCornerShape(14.dp))
-                .background(Color(0x553D8FA8))
-                .border(1.dp, Color(0x668BE9FD), RoundedCornerShape(14.dp)),
-            contentAlignment = Alignment.Center
-        ) { Icon(Icons.Default.Terminal, null, tint = Cyan) }
-        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text("Serminal-", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
             Text("A little shell. A lot of possibility.", color = Muted, fontSize = 11.sp)
         }
-        Box(
-            Modifier.clip(CircleShape).background(Color(0x5531C48D))
-                .border(1.dp, Color(0x665DE2B1), CircleShape)
-                .padding(horizontal = 11.dp, vertical = 7.dp)
-        ) {
-            Text("● LOCAL SESSION", color = Color(0xFFB8F6D9), fontSize = 9.sp, letterSpacing = 1.sp)
+        Box {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(Icons.Default.Menu, contentDescription = "Open settings", tint = Color.White)
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false },
+                modifier = Modifier.width(280.dp).background(Color(0xF018263A))
+            ) {
+                Column(Modifier.padding(horizontal = 18.dp, vertical = 12.dp)) {
+                    Text("BACKGROUND", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Blur", color = Muted, fontSize = 12.sp, modifier = Modifier.width(48.dp))
+                        Slider(value = blur, onValueChange = onBlur, valueRange = 0f..48f, modifier = Modifier.weight(1f))
+                        Text("${blur.toInt()}", color = Color.White, fontSize = 11.sp, modifier = Modifier.width(28.dp))
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Shade", color = Muted, fontSize = 12.sp, modifier = Modifier.width(48.dp))
+                        Slider(value = shade, onValueChange = onShade, valueRange = 0.15f..0.82f, modifier = Modifier.weight(1f))
+                        Text("${(shade * 100).toInt()}%", color = Color.White, fontSize = 11.sp, modifier = Modifier.width(34.dp))
+                    }
+                }
+            }
         }
     }
 }
@@ -267,33 +286,5 @@ private fun executeCommand(command: String, cwd: File, home: File): Pair<List<St
         }
     } catch (error: Exception) {
         listOf("error: " + (error.message ?: "command failed")) to cwd
-    }
-}
-
-@Composable
-private fun AmbienceControls(blur: Float, onBlur: (Float) -> Unit, shade: Float, onShade: (Float) -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
-            .background(Color(0x99101C2C))
-            .border(1.dp, Color(0x44D7EDFF), RoundedCornerShape(20.dp))
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Tune, null, tint = Cyan, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("AMBIENCE", color = Color.White, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.weight(1f))
-            Text("JELLYFISH LOOP", color = Color(0xFF9FC8D8), fontSize = 9.sp, letterSpacing = 1.sp)
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Blur", color = Muted, fontSize = 10.sp, modifier = Modifier.width(42.dp))
-            Slider(value = blur, onValueChange = onBlur, valueRange = 0f..32f, modifier = Modifier.weight(1f))
-            Text(blur.toInt().toString() + "dp", color = Color.White, fontSize = 10.sp, modifier = Modifier.width(38.dp))
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Shade", color = Muted, fontSize = 10.sp, modifier = Modifier.width(42.dp))
-            Slider(value = shade, onValueChange = onShade, valueRange = 0.15f..0.82f, modifier = Modifier.weight(1f))
-            Text((shade * 100).toInt().toString() + "%", color = Color.White, fontSize = 10.sp, modifier = Modifier.width(38.dp))
-        }
     }
 }

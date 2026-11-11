@@ -1,6 +1,7 @@
 package com.saltyfries.serminal
 
 import android.os.Bundle
+import android.view.TextureView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -36,8 +37,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -87,16 +86,12 @@ private fun JellyfishBackdrop(blur: Float) {
     DisposableEffect(player) { onDispose { player.release() } }
     AndroidView(
         factory = { ctx ->
-            PlayerView(ctx).apply {
-                this.player = player
-                // TextureView is required because SurfaceView bypasses Compose graphics effects.
-                setSurfaceType(PlayerView.SURFACE_TYPE_TEXTURE_VIEW)
-                useController = false
-                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
-                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            TextureView(ctx).apply {
+                // A TextureView stays in the normal view render tree, so Compose can blur it.
+                player.setVideoTextureView(this)
             }
         },
+        onRelease = { view -> player.clearVideoTextureView(view) },
         modifier = Modifier.fillMaxSize().blur(blur.dp).background(Night)
     )
 }
@@ -114,6 +109,17 @@ private fun Header(
             Text("Serminal-", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
             Text("A little shell. A lot of possibility.", color = Muted, fontSize = 11.sp)
         }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                Modifier.clip(RoundedCornerShape(50)).background(Color(0x4427D6A0))
+                    .border(1.dp, Color(0x5537D9A5), RoundedCornerShape(50))
+                    .padding(horizontal = 9.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Box(Modifier.size(5.dp).background(Color(0xFF69E6B0), CircleShape))
+                Text("LOCAL SESSION", color = Color(0xFFBDEFD8), fontSize = 8.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp)
+            }
         Box {
             IconButton(onClick = { menuExpanded = true }) {
                 Icon(Icons.Default.Menu, contentDescription = "Open settings", tint = Color.White)
@@ -138,6 +144,7 @@ private fun Header(
                     }
                 }
             }
+        }
         }
     }
 }

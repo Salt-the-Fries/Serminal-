@@ -35,9 +35,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.Dispatchers
@@ -48,7 +45,6 @@ import java.io.File
 private val Night = Color(0xFF07111F)
 private val Cyan = Color(0xFF8BE9FD)
 private val Muted = Color(0xFF9BAFC4)
-private const val VideoUrl = "https://raw.githubusercontent.com/Salt-the-Fries/Serminal-/main/264272_medium.mp4"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,15 +83,7 @@ private fun SerminalApp() {
 @Composable
 private fun JellyfishBackdrop(blur: Float) {
     val context = LocalContext.current
-    val player = remember {
-        ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(VideoUrl))
-            repeatMode = Player.REPEAT_MODE_ONE
-            playWhenReady = true
-            volume = 0f
-            prepare()
-        }
-    }
+    val player = remember { JellyfishPlayerFactory.create(context) }
     DisposableEffect(player) { onDispose { player.release() } }
     AndroidView(
         factory = { ctx ->
